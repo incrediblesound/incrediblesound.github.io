@@ -1,0 +1,357 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>How to Find a Path Through a Tree With JavaScript - James H. Edwards</title>
+  <meta name="author" content="James Howe Edwards">
+
+  
+  <meta name="description" content="This is the first of two blog posts about my mongoose plugin category-tree. The plugin is designed to automate save a series of hierarchical &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://incrediblesound.github.io/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="James H. Edwards" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">James H. Edwards</a></h1>
+  
+    <h2>Software Development</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:incrediblesound.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">How to Find a Path Through a Tree With JavaScript</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-27T19:17:52-07:00" pubdate data-updated="true">Jul 27<sup>th</sup>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>This is the first of two blog posts about my mongoose plugin <a href="https://www.npmjs.org/package/category-tree">category-tree</a>. The plugin is designed to automate save a series of hierarchical catagories by passing the most specific category to the save callback when saving an item to the database. <!--more--> In order to accomplish this task, the app needs to have a taxonomic tree containing all the category names in the system, and a set of names for each of the categories. A code example will serve to illustrate what I mean:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">productTree</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">products</span><span class="o">:</span><span class="p">{</span>
+</span><span class='line'>      <span class="nx">household</span><span class="o">:</span><span class="p">{</span> <span class="nx">appliance</span><span class="o">:</span><span class="p">{},</span> <span class="nx">electronics</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">sound_video</span><span class="o">:</span><span class="p">{</span> <span class="nx">speakers</span><span class="o">:</span><span class="p">{},</span> <span class="nx">tvs</span><span class="o">:</span><span class="p">{}</span> <span class="p">},</span>
+</span><span class='line'>          <span class="nx">security</span><span class="o">:</span><span class="p">{}</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'>      <span class="nx">office</span><span class="o">:</span><span class="p">{</span>
+</span><span class='line'>          <span class="nx">computers</span><span class="o">:</span><span class="p">{},</span>
+</span><span class='line'>          <span class="nx">desk</span><span class="o">:</span><span class="p">{</span> <span class="nx">pens</span><span class="o">:</span><span class="p">{},</span> <span class="nx">stationary</span><span class="o">:</span><span class="p">{}</span> <span class="p">}</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">categories</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;department&#39;</span><span class="p">,</span><span class="s1">&#39;subDepartment&#39;</span><span class="p">,</span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="s1">&#39;subCategory&#39;</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Each property of the &lsquo;productTree&rsquo; object is a potential label for one of the categories, and the categories correspond exactly to properties of a mongoose schema. To set the categories properly you need to be able to find a path through the productTree, and that problem will serve as the subject of this post. My algorithm for finding a path through a tree is described below. The following assumes we are keeping track of an array &lsquo;path&rsquo;, a boolean &lsquo;done&rsquo; and a &lsquo;result&rsquo; variable.</p>
+
+<ol>
+<li>Iterate over the child nodes of the current node.</li>
+<li>If done is false, check to see if the current child is our target node.</li>
+<li>If the current child is our target push it to the path array, set result to path and done to true.</li>
+<li>If the current child is not our target, examine the current child for children</li>
+<li>If the child has children, set the child to current node and start over at step one. Otherwise do nothing.</li>
+<li>If the iteration of the current level finished and done is still false, pop the last node out of the path aray.</li>
+</ol>
+
+
+<p>The above algorithm tries every path through the tree, keeping a record of each path as it progresses. If a given path ends with a negative result, the path leading to that result will be popped off the record. Here is the code in JavaScript:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">function</span> <span class="nx">makePath</span><span class="p">(</span><span class="nx">tree</span><span class="p">,</span> <span class="nx">target</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">result</span><span class="p">,</span>
+</span><span class='line'>      <span class="nx">done</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>      <span class="nx">path</span> <span class="o">=</span> <span class="p">{};</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">function</span> <span class="nx">traverse</span><span class="p">(</span><span class="nx">tree</span><span class="p">,</span> <span class="nx">target</span><span class="p">,</span> <span class="nx">root</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">keys</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">tree</span><span class="p">);</span>
+</span><span class='line'>    <span class="nx">forEach</span><span class="p">(</span><span class="nx">keys</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">key</span> <span class="o">===</span> <span class="nx">target</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>          <span class="c1">//if we found our target push it to the path</span>
+</span><span class='line'>          <span class="nx">path</span><span class="p">[</span><span class="nx">root</span><span class="p">].</span><span class="nx">push</span><span class="p">(</span><span class="nx">target</span><span class="p">);</span>
+</span><span class='line'>          <span class="c1">//set result to the completed path</span>
+</span><span class='line'>          <span class="nx">result</span> <span class="o">=</span> <span class="nx">path</span><span class="p">[</span><span class="nx">root</span><span class="p">];</span>
+</span><span class='line'>          <span class="c1">//set done to true to exit the search</span>
+</span><span class='line'>          <span class="nx">done</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+</span><span class='line'>          <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>          <span class="c1">//if the node does not match we need to check for children</span>
+</span><span class='line'>          <span class="kd">var</span> <span class="nx">newRoot</span> <span class="o">=</span> <span class="nx">tree</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span>
+</span><span class='line'>          <span class="k">if</span><span class="p">(</span><span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">newRoot</span><span class="p">).</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">//if node has children, push the key into our path and check the children for our target</span>
+</span><span class='line'>            <span class="nx">path</span><span class="p">[</span><span class="nx">root</span><span class="p">].</span><span class="nx">push</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nx">traverse</span><span class="p">(</span><span class="nx">tree</span><span class="p">[</span><span class="nx">key</span><span class="p">],</span> <span class="nx">target</span><span class="p">,</span> <span class="nx">root</span><span class="p">);</span>
+</span><span class='line'>          <span class="p">}</span>
+</span><span class='line'>          <span class="c1">//no children means our search of this branch is over</span>
+</span><span class='line'>          <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="c1">//if we leave our for loop but we are not done that means we failed to find our target</span>
+</span><span class='line'>    <span class="c1">//in this branch, as a result we need to pop each node out of our path before we return</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">done</span><span class="p">){</span>
+</span><span class='line'>      <span class="nx">path</span><span class="p">[</span><span class="nx">root</span><span class="p">].</span><span class="nx">pop</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//set an array of the root nodes of our product tree. These are super-categories that are</span>
+</span><span class='line'>  <span class="c1">//not saved in the item schema, possibly representing types of items, i.e. different schemas.</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">roots</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">tree</span><span class="p">);</span>
+</span><span class='line'>  <span class="nx">forEach</span><span class="p">(</span><span class="nx">roots</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">root</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">path</span><span class="p">[</span><span class="nx">root</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span>
+</span><span class='line'>    <span class="c1">//traverse our tree, going through each root node until the target leaf is found in the</span>
+</span><span class='line'>    <span class="c1">//tree defined by that root node.</span>
+</span><span class='line'>    <span class="nx">traverse</span><span class="p">(</span><span class="nx">tree</span><span class="p">[</span><span class="nx">root</span><span class="p">],</span> <span class="nx">target</span><span class="p">,</span> <span class="nx">root</span><span class="p">);</span>
+</span><span class='line'>  <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">result</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When a new item is saved to the database none of the categories need to be filled out, simply passing the most specific category as the first argument to the save function is sufficient. How this is accomplished is covered in the next blog post, which covers the integration of an app with the Node.js mongoose module.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">James Howe Edwards</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-27T19:17:52-07:00" pubdate data-updated="true">Jul 27<sup>th</sup>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/algorithm/'>algorithm</a>, <a class='category' href='/blog/categories/javascript/'>javascript</a>, <a class='category' href='/blog/categories/tree/'>tree</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://incrediblesound.github.io/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript/" data-via="" data-counturl="http://incrediblesound.github.io/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/07/27/how-to-integrate-an-app-with-mongoose/" title="Next Post: How to Integrate an App with Mongoose">How to Integrate an App with Mongoose &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/07/27/how-to-integrate-an-app-with-mongoose/">How to Integrate an App With Mongoose</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript/">How to Find a Path Through a Tree With JavaScript</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - James Howe Edwards -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

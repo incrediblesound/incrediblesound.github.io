@@ -4,7 +4,7 @@
   <title><![CDATA[James H. Edwards]]></title>
   <link href="http://incrediblesound.github.io/atom.xml" rel="self"/>
   <link href="http://incrediblesound.github.io/"/>
-  <updated>2014-07-27T22:10:32-07:00</updated>
+  <updated>2014-07-29T19:25:55-07:00</updated>
   <id>http://incrediblesound.github.io/</id>
   <author>
     <name><![CDATA[James Howe Edwards]]></name>
@@ -12,6 +12,179 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[JavaScript Subclasses the Right Way]]></title>
+    <link href="http://incrediblesound.github.io/blog/2014/07/28/javascript-subclasses-the-right-way/"/>
+    <updated>2014-07-28T12:00:04-07:00</updated>
+    <id>http://incrediblesound.github.io/blog/2014/07/28/javascript-subclasses-the-right-way</id>
+    <content type="html"><![CDATA[<p>There is a lot of misinformation on the web about making classes and subclasses in JavaScript. Since the right way is both simple and logical, clearing the air about this issue will not be hard. The problem we face has three steps&hellip;<!--more--></p>
+
+<ol>
+<li>How do I make a object delegate to another object?</li>
+<li>How do I make a class* in JavaScript?</li>
+<li>How do I make a subclass that delegates to another class?</li>
+</ol>
+
+
+<p>*javascript doesn&rsquo;t really have classes but there is a way to hack it</p>
+
+<p>The first problem is rather simple, lets say we define an object called &lsquo;orator&rsquo;.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">orator</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">oratory</span><span class="o">:</span> <span class="s1">&#39;And so it was that...&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">orate</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">oratory</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now that we have an orator object we can create an orator and call the methods we just defined:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">me</span> <span class="o">=</span> <span class="nx">orator</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">me</span><span class="p">.</span><span class="nx">orate</span><span class="p">()</span> <span class="c1">//=&gt; &#39;And so it was that...&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Great, now I am an orator. But what if I want to be a professor? A professor is like an orator, except that there is a specific subject that she talks about. To do this we have to</p>
+
+<ol>
+<li>Define a function that takes the &lsquo;subject&rsquo; parameter as an argument</li>
+<li>Within the function body, create an object that delegates to the orator</li>
+<li>Modify the oratory so that it returns a professor specific oration</li>
+<li>Return the object</li>
+</ol>
+
+
+<p>Step two is the most important part of this process. In JavaScript, if you make a new object with Object.create() and pass an existing object into the create method like this&hellip;</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">newobject</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">existingObject</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>then the new object delegates to the existing object for all failed property and method lookups. That means that if we check our new object for any given property or method and the check <strong>fails</strong>, that is, the property or method does not exist on the new object, then the javascript interpreter will check the existing object for that property or methods and return it if the lookup on that object is successful. That means we can do this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">first</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">first</span><span class="o">:</span> <span class="s1">&#39;I\&#39;m number one!&#39;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">second</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">first</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">second</span><span class="p">.</span><span class="nx">first</span><span class="p">);</span> <span class="c1">//=&gt; &#39;I\&#39;m number one!&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now that we can delegate properties and methods we can focus on making our (kindof) class. JavaScript has a very simple pattern for making a pseudoclass:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">Class</span><span class="p">(</span><span class="nx">prop1</span><span class="p">,</span> <span class="nx">prop1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">prop1</span> <span class="o">=</span> <span class="nx">prop1</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">prop2</span> <span class="o">=</span> <span class="nx">prop2</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">method</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){};</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Class</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It is important to understand exactly what is going on here. When we use the &lsquo;new&rsquo; keyword on line eight, the javascript interpreter adds two lines to our code before making our object.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">Class</span><span class="p">(</span><span class="nx">prop1</span><span class="p">,</span> <span class="nx">prop2</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">this</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">prop1</span> <span class="o">=</span> <span class="nx">prop1</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">prop2</span> <span class="o">=</span> <span class="nx">prop2</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It should now be fairly clear now how this object is constructed. But what about line six on the example before this one? It turns out that javascript gives us a built-in property specifically for storing <strong>methods</strong> for our class. Any method stored on the Class.prototype will be available on a new instance of the class because, as we see on line 2 of this example, the object returned by the constructor function is created with the prototype as its delegate. Our constructor function will not generate new functions every time an instance is created, and instead will delegate to the prototype of the class. Here is our orator constructor:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">Orator</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">oratory</span> <span class="o">=</span> <span class="s1">&#39;And so it was that...&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">verbose</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">Orator</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">orate</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>  <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">oratory</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>To create a professor sub-class, we simply make a new professor class, define the properties that distinguish the professor from the orator and then set the professor prototype to a new object that delegates to the orator prototype. Now all failed calls to methods on a professor will delegate up the chain to the orator prototype.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">Professor</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">subject</span><span class="p">){</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">oratory</span> <span class="o">=</span> <span class="s1">&#39;Today we will discuss &#39;</span><span class="o">+</span><span class="nx">subject</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">Professor</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">Orator</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This will allow our professor to inherit the methods of the orator. If we also want to inherit the properties of the orator, we have to call its constructor function within the professor constructor:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">Professor</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">subject</span><span class="p">){</span>
+</span><span class='line'>  <span class="nx">Orator</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">oratory</span> <span class="o">=</span> <span class="s1">&#39;Today we will discuss &#39;</span><span class="o">+</span><span class="nx">subject</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">Professor</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">Orator</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This will copy all the orator&rsquo;s properties into the professor. Notice that the oratory property will be copied and then overwritten by the professor constructor function during instantiation. And now we have a full subclass that inherits both properties and methods of the super-class.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[How to Integrate an App With Mongoose]]></title>

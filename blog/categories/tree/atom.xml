@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Tree | James H. Edwards]]></title>
+  <link href="http://incrediblesound.github.io/blog/categories/tree/atom.xml" rel="self"/>
+  <link href="http://incrediblesound.github.io/"/>
+  <updated>2014-07-29T19:25:55-07:00</updated>
+  <id>http://incrediblesound.github.io/</id>
+  <author>
+    <name><![CDATA[James Howe Edwards]]></name>
+    <email><![CDATA[james.howe.edwards@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[How to Find a Path Through a Tree With JavaScript]]></title>
+    <link href="http://incrediblesound.github.io/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript/"/>
+    <updated>2014-07-27T19:17:52-07:00</updated>
+    <id>http://incrediblesound.github.io/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript</id>
+    <content type="html"><![CDATA[<p>This is the first of two blog posts about my mongoose plugin <a href="https://www.npmjs.org/package/category-tree">category-tree</a>. The plugin is designed to automate save a series of hierarchical catagories by passing the most specific category to the save callback when saving an item to the database. <!--more--> In order to accomplish this task, the app needs to have a taxonomic tree containing all the category names in the system, and a set of names for each of the categories. A code example will serve to illustrate what I mean:
+```javascript
+var productTree = {</p>
+
+<pre><code>products:{    
+    household:{ appliance:{}, electronics: {     
+        sound_video:{ speakers:{}, tvs:{} },    
+        security:{}     
+    }     
+},    
+    office:{ 
+        computers:{}, 
+        desk:{ pens:{}, stationary:{} } 
+    }
+} 
+</code></pre>
+
+<p>};  <br/>
+var categories = [&lsquo;department&rsquo;,&lsquo;subDepartment&rsquo;,&lsquo;category&rsquo;,&lsquo;subCategory&rsquo;]
+```
+Each property of the &lsquo;productTree&rsquo; object is a potential label for one of the categories, and the categories correspond exactly to properties of a mongoose schema. To set the categories properly you need to be able to find a path through the productTree, and that problem will serve as the subject of this post. My algorithm for finding a path through a tree is described below. The following assumes we are keeping track of an array &lsquo;path&rsquo;, a boolean &lsquo;done&rsquo; and a &lsquo;result&rsquo; variable.</p>
+
+<ol>
+<li>Iterate over the child nodes of the current node.</li>
+<li>If done is false, check to see if the current child is our target node.</li>
+<li>If the current child is our target push it to the path array, set result to path and done to true.</li>
+<li>If the current child is not our target, examine the current child for children</li>
+<li>If the child has children, set the child to current node and start over at step one. Otherwise do nothing.</li>
+<li>If the iteration of the current level finished and done is still false, pop the last node out of the path aray.</li>
+</ol>
+
+
+<p>The above algorithm tries every path through the tree, keeping a record of each path as it progresses. If a given path ends with a negative result, the path leading to that result will be popped off the record. Here is the code in JavaScript:</p>
+
+<p>```javascript
+function makePath(tree, target) {</p>
+
+<p>  var result,</p>
+
+<pre><code>  done = false,
+  path = {};
+</code></pre>
+
+<p>  function traverse(tree, target, root) {</p>
+
+<pre><code>var keys = Object.keys(tree);
+forEach(keys, function(key) {
+  if (!done) {
+    if (key === target) {
+      //if we found our target push it to the path
+      path[root].push(target);
+      //set result to the completed path
+      result = path[root];
+      //set done to true to exit the search
+      done = true; 
+      return;
+    } else {
+      //if the node does not match we need to check for children
+      var newRoot = tree[key];
+      if(Object.keys(newRoot).length &gt; 0) {
+        //if node has children, push the key into our path and check the children for our target
+        path[root].push(key);
+        return traverse(tree[key], target, root);  
+      }
+      //no children means our search of this branch is over
+      return;
+    }
+  } 
+});
+//if we leave our for loop but we are not done that means we failed to find our target
+//in this branch, as a result we need to pop each node out of our path before we return
+if (!done){ 
+  path[root].pop(); 
+}
+return;
+</code></pre>
+
+<p>  };</p>
+
+<p>  //set an array of the root nodes of our product tree. These are super-categories that are
+  //not saved in the item schema, possibly representing types of items, i.e. different schemas.
+  var roots = Object.keys(tree);
+  forEach(roots, function (root) {</p>
+
+<pre><code>path[root] = [];
+//traverse our tree, going through each root node until the target leaf is found in the
+//tree defined by that root node.
+traverse(tree[root], target, root);
+</code></pre>
+
+<p>  });</p>
+
+<p>  return result;
+};
+```
+When a new item is saved to the database none of the categories need to be filled out, simply passing the most specific category as the first argument to the save function is sufficient. How this is accomplished is covered in the next blog post, which covers the integration of an app with the Node.js mongoose module.</p>
+]]></content>
+  </entry>
+  
+</feed>

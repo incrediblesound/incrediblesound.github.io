@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>How to Integrate an App With Mongoose - James H. Edwards</title>
+  <meta name="author" content="James Howe Edwards">
+
+  
+  <meta name="description" content="This is the second of two posts about my mongoose plugin category-tree. In the last post we looked at an algorithm that finds a path to a leaf node &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://incrediblesound.github.io/blog/2014/07/27/how-to-integrate-an-app-with-mongoose">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="James H. Edwards" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">James H. Edwards</a></h1>
+  
+    <h2>Software Development</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:incrediblesound.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">How to Integrate an App With Mongoose</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-27T20:19:32-07:00" pubdate data-updated="true">Jul 27<sup>th</sup>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>This is the second of two posts about my mongoose plugin <a href="https://www.npmjs.org/package/category-tree">category-tree</a>. In the last post we looked at an algorithm that finds a path to a leaf node through a tree of categories. With that step done, we need to apply the path to the correct properties of the document before it is saved to the database. This post explains how I integrated my app with mongoose so that it is called every time a document is saved.<!--more--></p>
+
+<p>If we look at the documentation for <a href="http://mongoosejs.com/docs/middleware.html">mongoose middleware</a> we see that that middleware can be called before or after the init, validate, save and remove methods. Because my app sets properties of the document before it is saved, I use the pre-save format. Additionally, the middleware must be wrapped in a function that takes the schema as an argument and is exported for use in Node. The basic outline for this construction looks like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">middleware</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">schema</span><span class="p">){</span>
+</span><span class='line'>  <span class="nx">schema</span><span class="p">.</span><span class="nx">pre</span><span class="p">(</span><span class="s1">&#39;save&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">next</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">cb</span><span class="p">){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="p">});</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The data parameter holds whatever is passed to the save method on the document, and the callback is passed into next at the end of the function. The body of the function is simple:</p>
+
+<ol>
+<li>Get the category labels that correspond to the document properties.</li>
+<li>Run the makePath algorithm to get the path through the tree.</li>
+<li>Store a reference to the document schema.</li>
+<li>Use the category labels to iterate over the schema properties and set them to the categories determined by the makePath algorithm.</li>
+<li>Invoke next with the callback parameter.</li>
+</ol>
+
+
+<p>This function will interrupt the save method and set all the category properties of the document before continuing on. To use the middleware we have to add it to the schema: where your mongoose schemas are declared, pass the middleware function into the plugin method of the schema. Here is an example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">categorytree</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;category-tree&#39;</span><span class="p">).</span><span class="nx">autoCat</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">Product</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Schema</span><span class="p">({</span>
+</span><span class='line'>  <span class="nx">name</span><span class="o">:</span> <span class="nb">String</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">description</span><span class="o">:</span> <span class="nb">String</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">price</span><span class="o">:</span> <span class="nb">String</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">subDepartment</span><span class="o">:</span> <span class="nb">String</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">category</span><span class="o">:</span> <span class="nb">String</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">subCategory</span><span class="o">:</span> <span class="nb">String</span>
+</span><span class='line'><span class="p">})</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">Product</span><span class="p">.</span><span class="nx">plugin</span><span class="p">(</span><span class="nx">categorytree</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now we can use the app by passing the value for the most specific category, in this case &lsquo;subCategory&rsquo;, into the save method when saving a new item to the database:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="k">new</span> <span class="nx">product</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;security cam&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">description</span><span class="o">:</span> <span class="s1">&#39;hi fi&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">price</span><span class="o">:</span> <span class="s1">&#39;one million dollars&#39;</span>
+</span><span class='line'>  <span class="p">}).</span><span class="nx">save</span><span class="p">(</span><span class="s1">&#39;security&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">//do stuff</span>
+</span><span class='line'>  <span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We do not need to set any of the category properties of this item because they are all set automatically. The above code saves the following document to the database:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span> <span class="nx">__v</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">subCategory</span><span class="o">:</span> <span class="s1">&#39;security&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">category</span><span class="o">:</span> <span class="s1">&#39;electronics&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">department</span><span class="o">:</span> <span class="s1">&#39;household&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;security cam&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">description</span><span class="o">:</span> <span class="s1">&#39;hi fi&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">price</span><span class="o">:</span> <span class="s1">&#39;one million dollars&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">_id</span><span class="o">:</span> <span class="mi">1234</span><span class="nx">omg</span> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">James Howe Edwards</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-27T20:19:32-07:00" pubdate data-updated="true">Jul 27<sup>th</sup>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javascript/'>javascript</a>, <a class='category' href='/blog/categories/mongodb/'>mongodb</a>, <a class='category' href='/blog/categories/mongoose/'>mongoose</a>, <a class='category' href='/blog/categories/node-dot-js/'>node.js</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://incrediblesound.github.io/blog/2014/07/27/how-to-integrate-an-app-with-mongoose/" data-via="" data-counturl="http://incrediblesound.github.io/blog/2014/07/27/how-to-integrate-an-app-with-mongoose/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript/" title="Previous Post: How to Find a Path Through a Tree with JavaScript">&laquo; How to Find a Path Through a Tree with JavaScript</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/07/28/javascript-subclasses-the-right-way/" title="Next Post: JavaScript Subclasses the Right Way">JavaScript Subclasses the Right Way &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/07/28/javascript-subclasses-the-right-way/">JavaScript Subclasses the Right Way</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/27/how-to-integrate-an-app-with-mongoose/">How to Integrate an App With Mongoose</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript/">How to Find a Path Through a Tree With JavaScript</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - James Howe Edwards -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

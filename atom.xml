@@ -4,7 +4,7 @@
   <title><![CDATA[James H. Edwards]]></title>
   <link href="http://incrediblesound.github.io/atom.xml" rel="self"/>
   <link href="http://incrediblesound.github.io/"/>
-  <updated>2014-07-29T19:25:55-07:00</updated>
+  <updated>2014-08-02T23:05:15-07:00</updated>
   <id>http://incrediblesound.github.io/</id>
   <author>
     <name><![CDATA[James Howe Edwards]]></name>
@@ -12,6 +12,136 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[What Is a Compact Prefix Tree?]]></title>
+    <link href="http://incrediblesound.github.io/blog/2014/08/02/what-is-a-compact-prefix-tree/"/>
+    <updated>2014-08-02T14:05:48-07:00</updated>
+    <id>http://incrediblesound.github.io/blog/2014/08/02/what-is-a-compact-prefix-tree</id>
+    <content type="html"><![CDATA[<p>There are a lot of data-structures out there and sometimes it can be hard to figure out what is worth learning or, even more important, what is useful for a given application. The compact prefix tree is a data-structure that I discovered recently and that I think it is interesting, fun to implement, and potentially very useful for a range of applications. In this post I will go over the basic implementation and uses of the compact prefix tree.<!--more--></p>
+
+<p>The compact prefix tree, or CPT, is basically a method for storing strings, most often individual words. The CPT economises by saving the difference between strings instead of the full string. The constructor function looks just like a normal tree:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">Radix</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">){</span>
+</span><span class='line'>  <span class="nx">value</span> <span class="o">=</span> <span class="nx">value</span> <span class="o">||</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">this</span><span class="p">.</span><span class="nx">children</span> <span class="o">=</span> <span class="p">[];</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>First we initialize the tree with no value. This will set our root as a base for saving a set of distinct branches, we&rsquo;ll see why we do this in a second. The special thing about the CPT is the insert method. Lets start by inserting the string &lsquo;to&rsquo; into the tree:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">tree</span><span class="p">.</span><span class="nx">value</span> <span class="c1">//=&gt; &#39;&#39;</span>
+</span><span class='line'><span class="nx">tree</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">//=&gt; Tree {value: &#39;to&#39;, children: []}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now our root has a single child with value &lsquo;to&rsquo;. What if we insert &lsquo;tons&rsquo; into our root?</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">tree</span><span class="p">.</span><span class="nx">insert</span><span class="p">(</span><span class="s1">&#39;tons&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nx">tree</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">//=&gt; Tree {value: &#39;to&#39;, children: []}</span>
+</span><span class='line'><span class="nx">tree</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">//=&gt; Tree {value: &#39;ns&#39;, children: []}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Our CPT finds that the beginning of our input string is already stored in the tree and it stores the difference between this value and the input value in a child node of the node containing the &ldquo;prefix&rdquo; value. Ok so can you guess what happens if we insert &ldquo;tonsils&rdquo;?</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">tree</span><span class="p">.</span><span class="nx">insert</span><span class="p">(</span><span class="s1">&#39;tonsils&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nx">tree</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">//=&gt; &#39;ils&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Because &lsquo;to&rsquo; and &lsquo;ns&rsquo; are already in the tree, our CPT simply stores the remaining value after these strings are removed in a new child node. Now we can call our reconstruct function which will reconstruct our input like this:</p>
+
+<ol>
+<li>Starting at our root, no value, call reconstruct recursively on all children</li>
+<li>At first child, return value + previous value, so we get &lsquo;&rsquo;+&lsquo;to&rsquo; = &lsquo;to&rsquo;</li>
+<li>At second child, return value + previous value &lsquo;to&rsquo;+&lsquo;ns&rsquo; = &lsquo;tons&rsquo;</li>
+<li>And again, at the third child &lsquo;tons&rsquo;+&lsquo;ils&rsquo; = &lsquo;tonsils&rsquo;</li>
+</ol>
+
+
+<p>I also gave my CPT a countChars function to count how many characters are actually stored in the tree, but here it is quite easy to see that we are storing just seven characters for a total input value of thirteen characters. This is the first advantage of the CPT, it compresses strings by eliminating the storage of redundant information. In any situation where a lot of words have to be stored economically, such as in a dictionary, the CPT is a highly economical choice. But there is another use to the CPT that hearkens back to the days of nokia flips phones.</p>
+
+<p>What if we give a CPT an input string and tell it to return all the words in the tree starting with the first node containing a string that is longer than the input but has the input as a prefix. So, for example, if we give our tree the input &lsquo;ton&rsquo;, it will return every string longer than three characters that starts with &lsquo;ton&rsquo;. And voila, we have auto-complete! Lets go over how that algorithm works step by step.</p>
+
+<ol>
+<li>Make &lsquo;current string&rsquo; by adding the current node&rsquo;s value onto the sum of previous values</li>
+<li>Iterate over the child nodes of the current node
+
+<ol type="a">
+<li>If &lsquo;current string&rsquo; plus this child&rsquo;s value matches part of the beginning of our target string,
+ call auto-complete recursively on this child</li>
+<li>If our target string matches part of the beginning of &lsquo;current string&rsquo; plus this child&rsquo;s value,
+ call reconstruct on this child.</li>
+</ol>
+</li>
+</ol>
+
+
+<p>For each node, we check to see if the word represented by this node matches any amount of characters in our target starting at the beginning. If so, this node is a &lsquo;prefix&rsquo; node of our target, and we have to go deeper down the tree along that branch. If, on the other hand, the word represented by this node is longer than our target and our target is a prefix of this word, we start reconstructing the tree with this node as the root.</p>
+
+<p>To sum up, I&rsquo;ll show give you the code for this last function to look at, but I encourage you to check out my <a href="https://github.com/incrediblesound/radix">github repository</a> to see the full code for a compact prefix-tree.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">Radix</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">complete</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">target</span><span class="p">,</span> <span class="nx">previous</span><span class="p">){</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">current</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">if</span><span class="p">(</span><span class="nx">current</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">current</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">value</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">if</span><span class="p">(</span><span class="nx">previous</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">current</span> <span class="o">=</span> <span class="nx">previous</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">value</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="k">this</span><span class="p">.</span><span class="nx">children</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+</span><span class='line'>      <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+</span><span class='line'>      <span class="kd">var</span> <span class="nx">chk</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s1">&#39;^&#39;</span> <span class="o">+</span> <span class="nx">current</span> <span class="o">+</span> <span class="nx">node</span><span class="p">.</span><span class="nx">value</span> <span class="o">+</span> <span class="s1">&#39;\.*&#39;</span><span class="p">);</span>
+</span><span class='line'>      <span class="kd">var</span> <span class="nx">tst</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s1">&#39;^&#39;</span> <span class="o">+</span> <span class="nx">target</span> <span class="o">+</span> <span class="s1">&#39;\.*&#39;</span><span class="p">);</span>
+</span><span class='line'>      <span class="k">if</span><span class="p">(</span><span class="nx">chk</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="nx">target</span><span class="p">)){</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">complete</span><span class="p">(</span><span class="nx">target</span><span class="p">,</span> <span class="nx">current</span><span class="p">);</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>      <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nx">tst</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="nx">current</span> <span class="o">+</span> <span class="nx">node</span><span class="p">.</span><span class="nx">value</span><span class="p">)){</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">reconstruct</span><span class="p">(</span><span class="nx">current</span><span class="p">);</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[JavaScript Subclasses the Right Way]]></title>

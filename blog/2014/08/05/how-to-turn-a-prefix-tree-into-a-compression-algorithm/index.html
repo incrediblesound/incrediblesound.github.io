@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Turning a Prefix Tree Into a Compression Algorithm - James H. Edwards</title>
+  <meta name="author" content="James Howe Edwards">
+
+  
+  <meta name="description" content="My last post talked about the prefix-tree and went over some basic concepts and implementation. In this post I will explain how I turned a simple &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://incrediblesound.github.io/blog/2014/08/05/how-to-turn-a-prefix-tree-into-a-compression-algorithm">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="James H. Edwards" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">James H. Edwards</a></h1>
+  
+    <h2>Software Development</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:incrediblesound.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Turning a Prefix Tree Into a Compression Algorithm</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-05T08:46:05-07:00" pubdate data-updated="true">Aug 5<sup>th</sup>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>My last post talked about the prefix-tree and went over some basic concepts and implementation. In this post I will explain how I turned a simple prefix-tree into an algorithm for efficiently storing long strings. If you want more info about the basic functionality of a prefix-tree take a look at my previous post or at the <a href="https://github.com/incrediblesound/radix">github repo</a>.<!--more--></p>
+
+<p>When I was experimenting with my prefix tree I realized that it only stored data efficiently if smaller strings were inserted before longer ones. This is because the tree checks to see if there are any nodes that already contain the beginning of the word being inserted, and if so, it chops off that chunk of the word and stores the remainder as a child of that node. So if we are storing &ldquo;dreams&rdquo;, and the tree already has a node &ldquo;dream&rdquo;, it will store &ldquo;s&rdquo; as a child of that node. This efficiency is lost if I already have &ldquo;dreams&rdquo; in the tree and I want to store &ldquo;dream&rdquo;, it would store &ldquo;dream&rdquo; as a new node at the same level unless I did some clever re-balancing.</p>
+
+<p>When I realized this point I had the idea of adding a function that takes an array of words, sorts them by length, and then inserts each word into the tree in order from shortest to longest. Then I realized that if I could take a string as input, split it into an array, sort the array, insert it into the tree, and then reconstruct the original input string, I would have a compression algorithm. With that idea in mind I came up with a plan for modifications to my original function:</p>
+
+<ol>
+<li>Add a new insert function that accepts a string, turns it into a sorted array and inserts the contents of the array into the tree.</li>
+<li>Remember the position of each word in the original string and store it in the tree</li>
+<li>Adjust the reconstruct function so that it returns the original input string exactly.</li>
+</ol>
+
+
+<p>Step one was easy: the new insert function, which I called documentInsert, simply adds a layer of processing on top of the original insert function. To accomplish step two I couldn&rsquo;t just insert the word itself, I had to bundle each word up with its position in the original string and insert that into the tree. Those two steps are both accomplished in the following function:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">Radix</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">documentInsert</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">string</span><span class="p">){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//turn the input string into an array</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">splitString</span> <span class="o">=</span> <span class="nx">string</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">);</span>
+</span><span class='line'>  <span class="c1">//iterate through the array and save each word in an object together with the </span>
+</span><span class='line'>  <span class="c1">//original index of that word </span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">array</span> <span class="o">=</span> <span class="p">[];</span>
+</span><span class='line'>  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">k</span> <span class="o">&lt;</span> <span class="nx">splitString</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">k</span> <span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">array</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span> <span class="nx">string</span><span class="o">:</span> <span class="nx">splitString</span><span class="p">[</span><span class="nx">k</span><span class="p">],</span> <span class="nx">index</span><span class="o">:</span> <span class="nx">k</span> <span class="p">});</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">sort</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">left</span><span class="p">,</span> <span class="nx">right</span><span class="p">)</span> <span class="p">{...};</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">merge</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">array</span><span class="p">){...};</span>
+</span><span class='line'>  <span class="c1">//this merge sort is modified to look into the objects stored in the array </span>
+</span><span class='line'>  <span class="c1">//and sort them by string length, producing an array of objects </span>
+</span><span class='line'>  <span class="c1">//storing words in order from shortest to longest.</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">sorted</span> <span class="o">=</span> <span class="nx">merge</span><span class="p">(</span><span class="nx">array</span><span class="p">);</span>
+</span><span class='line'>  <span class="c1">//iterate over the sorted array and insert each object into the tree</span>
+</span><span class='line'>  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">sorted</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">insert</span><span class="p">(</span><span class="nx">sorted</span><span class="p">[</span><span class="nx">i</span><span class="p">]);</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Storing the location of each word is simple: each node of the tree is initialized with an array called &lsquo;locations&rsquo; that stores the index of the word in the pre-sorted input array. Words that are repeated in the original string will have different locations, so I modified the insert function such that when the inserted word is found to have been previously stored in the current tree I push the index of the inserted word onto the locations array of that node. This way each node stores a single word along with all the locations of that word in the original string.</p>
+
+<p>The reconstruct function also has to be modified. I found the easiest way to do this was with a subroutine function defined within the reconstruct function. The reconstruct function holds a result array and a search function. It calls the search function on the root node which traverses the entire tree. At each node of the tree, the search function iterates over the locations array and sets the indexes of the results array corresponding to those locations to the word stored at that node. Before you look at the code, consider this simple example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">results</span> <span class="o">=</span> <span class="p">[];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">value</span><span class="o">:</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">locations</span><span class="o">:</span> <span class="p">[</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span> <span class="p">]</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//if we set the indexes of results defined by the locations array </span>
+</span><span class='line'><span class="c1">//to the value of the node we get this:</span>
+</span><span class='line'><span class="nx">results</span> <span class="o">=</span> <span class="p">[</span> <span class="kc">undefined</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span> <span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Because the locations correspond to the original locations of the words, it is not important in what order the node are visited, so long as the correct word for each node can be reconstructed. Now take a look at the code:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">Radix</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">reconstruct</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">[];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">search</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">context</span><span class="p">,</span> <span class="nx">value</span><span class="p">){</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">value</span> <span class="o">!==</span> <span class="kc">undefined</span><span class="p">){</span>
+</span><span class='line'>      <span class="c1">//each word is constructed by the current node value appended to the sum of the </span>
+</span><span class='line'>      <span class="c1">//previous node values.</span>
+</span><span class='line'>      <span class="nx">value</span> <span class="o">=</span> <span class="nx">value</span> <span class="o">+</span> <span class="nx">context</span><span class="p">.</span><span class="nx">value</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>      <span class="c1">//at the root we set value to the empty string</span>
+</span><span class='line'>      <span class="nx">value</span> <span class="o">=</span> <span class="nx">context</span><span class="p">.</span><span class="nx">value</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="c1">//if value is not an empty string, iterate over the locations array and add the current</span>
+</span><span class='line'>    <span class="c1">//value to the result array at the indexes stored there</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">value</span><span class="p">.</span><span class="nx">length</span><span class="p">){</span>
+</span><span class='line'>      <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">k</span> <span class="o">&lt;</span> <span class="nx">context</span><span class="p">.</span><span class="nx">locations</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">k</span><span class="o">++</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">result</span><span class="p">[</span><span class="nx">context</span><span class="p">.</span><span class="nx">locations</span><span class="p">[</span><span class="nx">k</span><span class="p">]]</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="c1">//if the current node has children iterate over them and call search recursively on each child</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">children</span><span class="p">.</span><span class="nx">length</span><span class="p">){</span>
+</span><span class='line'>      <span class="kd">var</span> <span class="nx">node</span><span class="p">;</span>
+</span><span class='line'>      <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">context</span><span class="p">.</span><span class="nx">children</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">node</span> <span class="o">=</span> <span class="nx">context</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+</span><span class='line'>        <span class="nx">search</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//call search on the root node and then return the result array after </span>
+</span><span class='line'>  <span class="c1">//turning it back into a string with the join method</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">search</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nx">result</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now that all three steps are complete the new function can accept a string, store it in a compressed form, and reconstruct the original input. Compression rates will vary based on the amount of redundant information in the string. I have seen rates of between 2:1 and 3:1 in my experiments. I encourage readers to experiment with or improve on the function, which can be downloaded from npm:</p>
+
+<pre><code>&gt;npm install radix-compression
+</code></pre>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">James Howe Edwards</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-05T08:46:05-07:00" pubdate data-updated="true">Aug 5<sup>th</sup>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/algorithms/'>algorithms</a>, <a class='category' href='/blog/categories/data/'>data</a>, <a class='category' href='/blog/categories/javascript/'>javascript</a>, <a class='category' href='/blog/categories/structures/'>structures</a>, <a class='category' href='/blog/categories/t9/'>t9</a>, <a class='category' href='/blog/categories/tree/'>tree</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://incrediblesound.github.io/blog/2014/08/05/how-to-turn-a-prefix-tree-into-a-compression-algorithm/" data-via="" data-counturl="http://incrediblesound.github.io/blog/2014/08/05/how-to-turn-a-prefix-tree-into-a-compression-algorithm/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/08/02/what-is-a-compact-prefix-tree/" title="Previous Post: What is a Compact Prefix Tree?">&laquo; What is a Compact Prefix Tree?</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/08/05/how-to-turn-a-prefix-tree-into-a-compression-algorithm/">Turning a Prefix Tree Into a Compression Algorithm</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/02/what-is-a-compact-prefix-tree/">What Is a Compact Prefix Tree?</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/28/javascript-subclasses-the-right-way/">JavaScript Subclasses the Right Way</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/27/how-to-integrate-an-app-with-mongoose/">How to Integrate an App With Mongoose</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/27/how-to-find-a-path-through-a-tree-with-javascript/">How to Find a Path Through a Tree With JavaScript</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - James Howe Edwards -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

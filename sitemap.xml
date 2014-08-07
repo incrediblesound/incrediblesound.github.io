@@ -3,6 +3,12 @@
   
   
   <url>
+    <loc>http://incrediblesound.github.io/blog/2014/08/05/how-to-turn-a-prefix-tree-into-a-compression-algorithm/</loc>
+    <lastmod>2014-08-05T08:46:05-07:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://incrediblesound.github.io/blog/2014/08/02/what-is-a-compact-prefix-tree/</loc>
     <lastmod>2014-08-02T14:05:48-07:00</lastmod>
     <priority>0.8</priority>
@@ -29,14 +35,14 @@
   
   <url>
     <loc>http://incrediblesound.github.io/</loc>
-    <lastmod>2014-08-03T13:49:50-07:00</lastmod>
+    <lastmod>2014-08-07T14:20:01-07:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   
   <url>
     <loc>http://incrediblesound.github.io/blog/archives/</loc>
-    <lastmod>2014-08-03T13:49:50-07:00</lastmod>
+    <lastmod>2014-08-07T14:20:01-07:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

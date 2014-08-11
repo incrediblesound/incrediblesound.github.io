@@ -48,14 +48,14 @@ What if we give a CPT an input string and tell it to return all the words in the
 	a. If 'current string' plus this child's value matches part of the beginning of our target string,
 		call auto-complete recursively on this child
 	b. If our target string matches part of the beginning of 'current string' plus this child's value,
-		call reconstruct on this child.
+		call reconstruct on this child and append the result to a return array.
 
 For each node, we check to see if the word represented by this node matches any amount of characters in our target starting at the beginning. If so, this node is a 'prefix' node of our target, and we have to go deeper down the tree along that branch. If, on the other hand, the word represented by this node is longer than our target and our target is a prefix of this word, we start reconstructing the tree with this node as the root.
 
 To sum up, I'll show give you the code for this last function to look at, but I encourage you to check out my [github repository](https://github.com/incrediblesound/radix) to see the full code for a compact prefix-tree.
 ```javascript
 Radix.prototype.complete = function(target, previous){
-  var current;
+  var result = [], current;
   if(current === undefined){
     current = this.value;
   }
@@ -64,15 +64,15 @@ Radix.prototype.complete = function(target, previous){
   }
   for(var i = 0; i < this.children.length; i++){
       var node = this.children[i];
-      var chk = new RegExp('^' + current + node.value + '\.*');
-      var tst = new RegExp('^' + target + '\.*');
+      var chk = new RegExp('^'+current+node.value+'\.*');
+      var tst = new RegExp('^'+target+'\.*');
       if(chk.test(target)){
         return node.complete(target, current);
       }
-      else if(tst.test(current + node.value)){
-        return node.reconstruct(current);
+      else if(tst.test(current+node.value)){
+        result = result.concat(node.reconstruct(current));
       }
   }
-  return null;
+  return result;
 };
 ```

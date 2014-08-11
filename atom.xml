@@ -4,7 +4,7 @@
   <title><![CDATA[James H. Edwards]]></title>
   <link href="http://incrediblesound.github.io/atom.xml" rel="self"/>
   <link href="http://incrediblesound.github.io/"/>
-  <updated>2014-08-11T09:03:56-07:00</updated>
+  <updated>2014-08-11T09:04:49-07:00</updated>
   <id>http://incrediblesound.github.io/</id>
   <author>
     <name><![CDATA[James Howe Edwards]]></name>
@@ -60,9 +60,13 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>To review, our event system is now made up of two methods:  <br/>
-1. object.on(&lsquo;event&rsquo;, callback) set callback to listen to &lsquo;event&rsquo;
-1. object.trigger(&lsquo;event&rsquo;) triggers &lsquo;event&rsquo;, invoking all the callbacks listening to it</p>
+<p>To review, our event system is now made up of two methods:</p>
+
+<ol>
+<li>object.on(&lsquo;event&rsquo;, callback) set callback to listen to &lsquo;event&rsquo;</li>
+<li>object.trigger(&lsquo;event&rsquo;) triggers &lsquo;event&rsquo;, invoking all the callbacks listening to it</li>
+</ol>
+
 
 <p>When you have a set of objects that all share a basic set of methods it makes sense to set up a class that they will delegate to for those methods. Before I discuss this class in detail, take a look at the code:</p>
 

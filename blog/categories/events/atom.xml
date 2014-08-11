@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Events | James H. Edwards]]></title>
   <link href="http://incrediblesound.github.io/blog/categories/events/atom.xml" rel="self"/>
   <link href="http://incrediblesound.github.io/"/>
-  <updated>2014-08-10T21:29:38-07:00</updated>
+  <updated>2014-08-10T21:31:08-07:00</updated>
   <id>http://incrediblesound.github.io/</id>
   <author>
     <name><![CDATA[James Howe Edwards]]></name>
@@ -18,7 +18,7 @@
     <link href="http://incrediblesound.github.io/blog/2014/08/08/how-to-make-an-event-system-in-javascript/"/>
     <updated>2014-08-08T18:07:13-07:00</updated>
     <id>http://incrediblesound.github.io/blog/2014/08/08/how-to-make-an-event-system-in-javascript</id>
-    <content type="html"><![CDATA[<p>Events are an extremely useful aspect of many JavaScript frameworks, but their functionality can seem bizarre if you don&rsquo;t know what&rsquo;s going on under the hood. In this blog post I will explain the inner workings of an event system, in particular how it can function as part of a system of classes. Because this explanation involves some discussion of classes you should definitely read my blog post on pseudo-classical instantiation first if you are unclear about that subject.<!--more--></p>
+    <content type="html"><![CDATA[<p>Events are an extremely useful aspect of many JavaScript frameworks, but their functionality can seem bizarre if you don&rsquo;t know what&rsquo;s going on under the hood. In this blog post I will explain the inner workings of an event system, in particular how it can function as part of a system of classes. Because this explanation involves some discussion of classes you should definitely read my blog post on JavaScript subclasses first if you are unclear about that subject.<!--more--></p>
 
 <p>Let&rsquo;s imagine a production system involving a manufacturing center and a shipping service. When the factory is finished making the products, shipping needs to be informed so that they can come and pick them up for distribution. We can start with a simple set of JavaScript objects to represent these units:
 ```javascript

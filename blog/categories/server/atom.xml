@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: node.js | James H. Edwards]]></title>
-  <link href="http://incrediblesound.github.io/blog/categories/node-dot-js/atom.xml" rel="self"/>
+  <title><![CDATA[Category: Server | James H. Edwards]]></title>
+  <link href="http://incrediblesound.github.io/blog/categories/server/atom.xml" rel="self"/>
   <link href="http://incrediblesound.github.io/"/>
   <updated>2014-08-30T15:21:05-07:00</updated>
   <id>http://incrediblesound.github.io/</id>
@@ -120,86 +120,6 @@ To define a server response to a given request you use &ldquo;http verb&rdquo; m
 
 
 <p>The advantage of this organization is that we know exactly where to go when we want to change the configuration of our server or add new routes. We are saved from the confusion that results from having blocks of code that serve different purposes stored in the same file.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[How to Integrate an App With Mongoose]]></title>
-    <link href="http://incrediblesound.github.io/blog/2014/07/27/how-to-integrate-an-app-with-mongoose/"/>
-    <updated>2014-07-27T20:19:32-07:00</updated>
-    <id>http://incrediblesound.github.io/blog/2014/07/27/how-to-integrate-an-app-with-mongoose</id>
-    <content type="html"><![CDATA[<p>This is the second of two posts about my mongoose plugin <a href="https://www.npmjs.org/package/category-tree">category-tree</a>. In the last post we looked at an algorithm that finds a path to a leaf node through a tree of categories. With that step done, we need to apply the path to the correct properties of the document before it is saved to the database. This post explains how I integrated my app with mongoose so that it is called every time a document is saved.<!--more--></p>
-
-<p>If we look at the documentation for <a href="http://mongoosejs.com/docs/middleware.html">mongoose middleware</a> we see that that middleware can be called before or after the init, validate, save and remove methods. Because my app sets properties of the document before it is saved, I use the pre-save format. Additionally, the middleware must be wrapped in a function that takes the schema as an argument and is exported for use in Node. The basic outline for this construction looks like this:</p>
-
-<p>```javascript
-exports.middleware = function(schema){</p>
-
-<pre><code>schema.pre('save', function(next, data, cb){
-
-});
-</code></pre>
-
-<p>};
-```
-The data parameter holds whatever is passed to the save method on the document, and the callback is passed into next at the end of the function. The body of the function is simple:</p>
-
-<ol>
-<li>Get the category labels that correspond to the document properties.</li>
-<li>Run the makePath algorithm to get the path through the tree.</li>
-<li>Store a reference to the document schema.</li>
-<li>Use the category labels to iterate over the schema properties and set them to the categories determined by the makePath algorithm.</li>
-<li>Invoke next with the callback parameter.</li>
-</ol>
-
-
-<p>This function will interrupt the save method and set all the category properties of the document before continuing on. To use the middleware we have to add it to the schema: where your mongoose schemas are declared, pass the middleware function into the plugin method of the schema. Here is an example:</p>
-
-<p>```javascript
-var categorytree = require(&lsquo;category-tree&rsquo;).autoCat;</p>
-
-<p>var Product = new Schema({</p>
-
-<pre><code>name: String,
-description: String,
-price: String,
-subDepartment: String,
-category: String,
-subCategory: String
-</code></pre>
-
-<p>})</p>
-
-<p>Product.plugin(categorytree);
-```
-Now we can use the app by passing the value for the most specific category, in this case &lsquo;subCategory&rsquo;, into the save method when saving a new item to the database:</p>
-
-<p>```javascript
-new product({</p>
-
-<pre><code>name: 'security cam',
-description: 'hi fi',
-price: 'one million dollars'
-</code></pre>
-
-<p>  }).save(&lsquo;security&rsquo;, function(err, data) {</p>
-
-<pre><code>//do stuff
-</code></pre>
-
-<p>  })
-<code>
-We do not need to set any of the category properties of this item because they are all set automatically. The above code saves the following document to the database:
-</code>javascript
-{ <em>_v: 0,
-  subCategory: &lsquo;security&rsquo;,
-  category: &lsquo;electronics&rsquo;,
-  department: &lsquo;household&rsquo;,
-  name: &lsquo;security cam&rsquo;,
-  description: &lsquo;hi fi&rsquo;,
-  price: &lsquo;one million dollars&rsquo;,
-  </em>id: 1234omg }
-```</p>
 ]]></content>
   </entry>
   

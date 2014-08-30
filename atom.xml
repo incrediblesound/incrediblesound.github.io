@@ -4,7 +4,7 @@
   <title><![CDATA[James H. Edwards]]></title>
   <link href="http://incrediblesound.github.io/atom.xml" rel="self"/>
   <link href="http://incrediblesound.github.io/"/>
-  <updated>2014-08-11T09:07:07-07:00</updated>
+  <updated>2014-08-30T15:21:05-07:00</updated>
   <id>http://incrediblesound.github.io/</id>
   <author>
     <name><![CDATA[James Howe Edwards]]></name>
@@ -12,6 +12,168 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[How to Make a Modular Server With Express 4]]></title>
+    <link href="http://incrediblesound.github.io/blog/2014/08/27/how-to-make-a-modular-server-with-express-4/"/>
+    <updated>2014-08-27T19:54:28-07:00</updated>
+    <id>http://incrediblesound.github.io/blog/2014/08/27/how-to-make-a-modular-server-with-express-4</id>
+    <content type="html"><![CDATA[<p>For this post I am going to discuss two of my favorites things: servers and modularity. Server design is an important skill for full stack developers and good server design can save a lot of time finding and fixing bugs. I recently started a personal project and, because I am anticipating some complexity on the backend, I decided to use a modular approach for my server. Lets look at each module and examine what it does. <!--more--></p>
+
+<p>The crux of my server is this server.js file:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="c1">// server.js</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;express&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./config.js&#39;</span><span class="p">)(</span><span class="nx">app</span><span class="p">,</span> <span class="nx">express</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">app</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This file is extremely simple: it requires express, create an app, passes the app into a config file and exports it. Why put such a small piece of code in its own file? The answer is separation of concerns. Each file does one job, and as a result we don&rsquo;t have to think as hard about the different blocks of code and what they are doing. This tiny file actually does three very important things:</p>
+
+<ol>
+<li>Create an express server</li>
+<li>Send the server into another function to be configured</li>
+<li>Export the server for access by another operation</li>
+</ol>
+
+
+<p>Now that we have a server we want it to listen for requests. The whole reason we have a server in the first place is that we have resources that we want to serve up to people (or machines) that request them. In this way a server is very much like a pharmacist. When people want medicine they go to the pharmacist, give her their request and their identification, and the pharmicist goes and gets their medicine for them. So of course we need our server listening for requests, otherwise its like a sleeping pharmacist. I take care of that step in index.js:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="c1">// index.js</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./server.js&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">port</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">PORT</span> <span class="o">||</span> <span class="mi">3000</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="nx">port</span><span class="p">);</span>
+</span><span class='line'><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;listening on port &#39;</span><span class="p">,</span> <span class="nx">port</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This file is even smaller than the last. I access the server I created in server.js by requiring that file, I get the port from the environment or set it to a default local port, and then I start my server listening for requests on that port. Again, it may seem silly to put these few lines in a single file, but now we have everything necessary to run our server in one file. You&rsquo;ve probably been wondering about that require statement on line four of server.js, so we&rsquo;ll go there now.</p>
+
+<p>Why are we passing objects into a require statement? If you understand what a decorator is, really what we are doing here is just like object decoration. My config.js file exports a function that takes the server and express as arguments and runs various configuration methods on them, so any kind of code we need to configure our server goes in that function and will be applied we invoke it with a newly created app object. Lets take a look:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="c1">//config.js</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">bodyParser</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;body-parser&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">session</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;express-session&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">app</span><span class="p">,</span> <span class="nx">express</span><span class="p">){</span>
+</span><span class='line'>  <span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">bodyParser</span><span class="p">());</span>
+</span><span class='line'>  <span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">session</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">secret</span><span class="o">:</span> <span class="s1">&#39;nacho secret&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">resave</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">saveUninitialized</span><span class="o">:</span> <span class="kc">true</span>
+</span><span class='line'>  <span class="p">}));</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="kr">static</span><span class="p">(</span><span class="nx">__dirname</span> <span class="o">+</span><span class="s1">&#39;/public&#39;</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./api/routes.js&#39;</span><span class="p">)(</span><span class="nx">app</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>There are some basic features that we want our server to have and those features are added here. At the top I require the two modules that my server needs: body-parser and express-session. The former appends a body object onto the request that contains form data from post requests as key value pairs, the latter adds a session object onto the request where I can store data about a particular user that will persist between requests. I need these services to store persistent data and process forms so I usually require them as part of my basic setup.</p>
+
+<p>Next I define the function that I will export to configure my application. Recall that this is the function I will invoke with express and my server in server.js. After this I use the app.use() method to intialize the modules I required up top and import their functionality into my server. Next I use the express.static() method to define a directory where I will serve static files. Express is really smart: it sees the index.html file in that directory and will serve that to the client, along with any .js or .css files that index.hml requires, when a request is made to the base url. Finally, I pass the app into a routes.js file where it will be configured with all the specific routes I want to use for my api.</p>
+
+<p>These are the most basic services I need to serve up a webpage. I make a server, add a couple useful features and tell it where my html is stored. Because I am using Angular, once the index.html file is loaded in the browser Angular&rsquo;s router will take over the job of routing and serving files. But thats not all I need. A server can provide many kinds of resources to the client, and in my app I want it to provide access to a database. At the end of my config.js file I pass the app into router.js file, which looks something like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="c1">// routes.js</span>
+</span><span class='line'><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">app</span><span class="p">){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/api/userdata&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">username</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">password</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">User</span><span class="p">.</span><span class="nx">findOne</span><span class="p">({</span><span class="nx">username</span><span class="o">:</span> <span class="nx">username</span><span class="p">,</span> <span class="nx">password</span><span class="o">:</span> <span class="nx">password</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">data</span><span class="p">){</span>
+</span><span class='line'>      <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
+</span><span class='line'>      <span class="nx">res</span><span class="p">.</span><span class="nx">redirect</span><span class="p">(</span><span class="s1">&#39;/#/home&#39;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">})</span>
+</span><span class='line'>  <span class="p">})</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/api/newuser&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">username</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">password</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">new</span> <span class="nx">User</span><span class="p">({</span><span class="nx">username</span><span class="o">:</span> <span class="nx">username</span><span class="p">,</span> <span class="nx">password</span><span class="o">:</span> <span class="nx">password</span><span class="p">}).</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">data</span><span class="p">){</span>
+</span><span class='line'>      <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user</span> <span class="o">=</span> <span class="nx">user</span><span class="p">;</span>
+</span><span class='line'>      <span class="nx">res</span><span class="p">.</span><span class="nx">redirect</span><span class="p">(</span><span class="s1">&#39;/#/home&#39;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">})</span>
+</span><span class='line'>  <span class="p">})</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>To define a server response to a given request you use &ldquo;http verb&rdquo; methods on the server object, each of which takes a url as its first argument and a callback as its second. The most common methods are app.get and app.post, the former makes a request for something from the server, either a web page or some data, and the latter sends data to the server. In routes.js I define responses for two different requests, each one defined by a specific url. When a post request is made to one of these urls Node.js will instantiate a request object and a response object and pass them into our callback where we can extract form data, store session data, access our database and define a server response. Now our server is fully functional, lets review each file and what it does:</p>
+
+<ol>
+<li>index.js  &ndash;> starts the server listening for http requests</li>
+<li>server.js &ndash;> creates a server object with express</li>
+<li>config.js &ndash;> configures the server</li>
+<li>routes.js &ndash;> defines the routes to be handled by the server</li>
+</ol>
+
+
+<p>The advantage of this organization is that we know exactly where to go when we want to change the configuration of our server or add new routes. We are saved from the confusion that results from having blocks of code that serve different purposes stored in the same file.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[JavaScript Event Systems Unraveled]]></title>
